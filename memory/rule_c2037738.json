@@ -12,7 +12,12 @@
     "run_80678",
     "run_80691",
     "run_80698",
-    "run_80705"
+    "run_80705",
+    "run_81440",
+    "run_81465",
+    "run_81475",
+    "run_81485",
+    "run_81494"
   ],
   "contradictions": [],
   "anchors": [
@@ -20,7 +25,7 @@
   ],
   "id": "rule_c2037738",
   "created_at": 1788680596.5336003,
-  "updated_at": 1788680705.749397,
-  "confidence": 0.871,
+  "updated_at": 1788681494.0759363,
+  "confidence": 0.887,
   "auto_apply": true
 }

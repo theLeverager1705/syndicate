@@ -8,7 +8,8 @@
   },
   "rationale": "User confirmed that they redacts application_number on a exam_scorecard.",
   "support": [
-    "run_80678"
+    "run_80678",
+    "run_81465"
   ],
   "contradictions": [],
   "anchors": [
@@ -16,7 +17,7 @@
   ],
   "id": "rule_ff35c38b",
   "created_at": 1788680678.715822,
-  "updated_at": 1788680678.7162254,
-  "confidence": 0.75,
-  "auto_apply": false
+  "updated_at": 1788681465.3271575,
+  "confidence": 0.816,
+  "auto_apply": true
 }
