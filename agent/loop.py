@@ -74,7 +74,8 @@ def process(
 
     tokens = ocr.extract(image_path)
     rules = memory.retrieve(context)
-    proposals, usage = classify.propose(tokens, context, rules)
+    earned = memory.earned(context)
+    proposals, usage = classify.propose(tokens, context, rules, earned)
 
     record.proposals = len(proposals)
     record.tokens_in = usage.tokens_in
@@ -95,9 +96,12 @@ def process(
             if p.source == "memory":
                 record.auto_applied += 1
 
+        anchor = (classify._label_for(tokens, p.token_indices[0])
+                  if p.token_indices else None)
         decisions.append(Decision(
             field_name=p.field_name, proposed=p.decision, final=final,
             source=p.source, rule_id=p.rule_id, asked_user=asked,
+            anchor=anchor,
         ))
         if final == "redact":
             to_redact.extend(p.token_indices)

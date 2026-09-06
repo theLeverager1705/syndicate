@@ -51,6 +51,7 @@ class Rule:
     rationale: str                      # the agent's own words, shown in UI
     support: list[str] = field(default_factory=list)        # run ids that agreed
     contradictions: list[str] = field(default_factory=list) # run ids that disagreed
+    anchors: list[str] = field(default_factory=list)        # labels that identified it
     id: str = field(default_factory=lambda: f"rule_{uuid.uuid4().hex[:8]}")
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
@@ -89,6 +90,18 @@ class Rule:
             self.confidence >= AUTO_APPLY_CONFIDENCE
             and len(self.support) >= MIN_SUPPORT_FOR_AUTO
         )
+
+    def learn_anchor(self, label: str) -> None:
+        """Remember a label that identified this field.
+
+        Decisions alone are not enough to skip the model: knowing you redact a
+        registration number does not tell you which pixels are one. Storing the
+        labels that located it before is what lets a later run resolve the
+        field locally and make no model call at all.
+        """
+        norm = "".join(ch for ch in label if ch.isalnum()).casefold()
+        if norm and norm not in self.anchors:
+            self.anchors.append(norm)
 
     def applies_strictly(self, context: dict[str, str]) -> bool:
         """True only when no shared context dimension disagrees.

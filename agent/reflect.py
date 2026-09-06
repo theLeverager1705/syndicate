@@ -22,6 +22,7 @@ class Decision:
     source: str              # "memory" | "model"
     rule_id: str | None = None
     asked_user: bool = False
+    anchor: str | None = None        # label text that located this field
 
     @property
     def was_wrong(self) -> bool:
@@ -40,6 +41,7 @@ class ReflectionReport:
     reinforced: list[str] = field(default_factory=list)
     contradicted: list[str] = field(default_factory=list)
     surprises: list[str] = field(default_factory=list)
+    skipped_unresolved: int = 0
 
     @property
     def learned_anything(self) -> bool:
@@ -53,6 +55,8 @@ class ReflectionReport:
             bits.append(f"{len(self.reinforced)} reinforced")
         if self.contradicted:
             bits.append(f"{len(self.contradicted)} corrected")
+        if self.skipped_unresolved:
+            bits.append(f"{self.skipped_unresolved} unresolved (not learned)")
         return ", ".join(bits) or "nothing new"
 
 
@@ -86,6 +90,13 @@ def reflect_on_run(
     report = ReflectionReport(run_id=run_id)
 
     for decision in decisions:
+        # A field the classifier could not name teaches nothing. Learning from
+        # it would write a confident rule keyed to a meaningless name, and the
+        # agent would then apply that rule unattended on later runs.
+        if decision.field_name.startswith("unresolved_"):
+            report.skipped_unresolved += 1
+            continue
+
         rule, action = memory.learn(
             field_name=decision.field_name,
             decision=decision.final,
@@ -93,6 +104,10 @@ def reflect_on_run(
             rationale=_rationale(decision, context),
             run_id=run_id,
         )
+        if decision.anchor:
+            rule.learn_anchor(decision.anchor)
+            memory.save(rule)
+
         {"created": report.created,
          "reinforced": report.reinforced,
          "contradicted": report.contradicted}[action].append(rule.id)

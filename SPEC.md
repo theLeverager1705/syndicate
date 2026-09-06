@@ -168,3 +168,22 @@ The fix distinguishes two kinds of context:
 
 Requiring strict agreement on ALL dimensions dropped the benefit to 16%;
 restricting it to governing dimensions restored 40% with silent errors at 0.
+
+## Measured result on real images (live model, 2026-09-06)
+
+Four scorecards through the full pipeline against GLM-4.7-Flash:
+
+| run | asked | from memory | model calls | output tokens | latency |
+|-----|-------|-------------|-------------|---------------|---------|
+| 1   | 6     | 0           | 1           | 1799          | 27.0s   |
+| 2   | 6     | 0           | 2           | 7821          | 82.4s   |
+| 3   | 1     | 5           | 1           | 625           | 10.5s   |
+| 4   | 0     | 6           | 0           | 0             | 4.2s    |
+
+By run 4 the agent asks nothing, calls no model, and finishes in 4.2s -- 6.4x
+faster than run 1 at zero marginal token cost. The remaining 4.2s is OCR,
+redaction and verification, all local.
+
+Run 2 needed two model calls because the first exhausted a 6000-token
+reasoning budget without emitting content. That variance is why truncation is
+treated as failure rather than parsed optimistically.
