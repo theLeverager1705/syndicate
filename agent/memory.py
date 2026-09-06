@@ -19,6 +19,14 @@ MEMORY_DIR = Path(__file__).resolve().parent.parent / "memory"
 # How much each matching context dimension contributes to a retrieval score.
 CONTEXT_WEIGHTS = {"doc_type": 3.0, "platform": 2.0, "issuer": 1.0}
 
+# Dimensions that GOVERN the preference rather than merely describe the
+# instance. A person's posture genuinely differs between LinkedIn and
+# Instagram, and between a scorecard and a vehicle photo -- so a rule may not
+# act unattended across those. Which exam board issued the scorecard does not
+# change whether they want their roll number hidden, so `issuer` informs
+# ranking but never blocks a rule from applying.
+GOVERNING_CONTEXT = ("doc_type", "platform")
+
 # A rule must clear this to be applied without asking the user.
 AUTO_APPLY_CONFIDENCE = 0.75
 
@@ -82,6 +90,22 @@ class Rule:
             and len(self.support) >= MIN_SUPPORT_FOR_AUTO
         )
 
+    def applies_strictly(self, context: dict[str, str]) -> bool:
+        """True only when no shared context dimension disagrees.
+
+        Only GOVERNING_CONTEXT dimensions are checked. Confidence measures
+        "how sure am I of this preference"; it says nothing about whether the
+        preference transfers to a different setting. Acting unattended requires
+        both. Without this a rule learned from LinkedIn offer letters will
+        silently govern an Instagram post -- precisely the failure this system
+        exists to prevent.
+        """
+        for key in GOVERNING_CONTEXT:
+            mine, theirs = self.context.get(key), context.get(key)
+            if mine and theirs and mine != theirs:
+                return False
+        return True
+
     def to_json(self) -> dict[str, Any]:
         d = asdict(self)
         d["confidence"] = round(self.confidence, 3)
@@ -136,6 +160,19 @@ class PolicyMemory:
         scored = [(r, s) for r, s in scored if s > 0]
         scored.sort(key=lambda rs: (rs[1], rs[0].confidence), reverse=True)
         return scored[:limit]
+
+    def earned(self, context: dict[str, str]) -> dict[str, Rule]:
+        """Rules permitted to act without consulting the user, by field.
+
+        Requires confidence, supporting observations, AND strict context
+        agreement. Anything failing the last test is still retrievable as a
+        suggestion, but must be confirmed.
+        """
+        out: dict[str, Rule] = {}
+        for rule, _score in self.retrieve(context):
+            if rule.auto and rule.applies_strictly(context):
+                out[rule.field_name] = rule
+        return out
 
     def find_similar(self, field_name: str, context: dict[str, str]) -> Rule | None:
         """Existing rule this observation should reinforce rather than duplicate."""

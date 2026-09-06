@@ -150,3 +150,21 @@ TensorMux, OpenAI-compatible:
 - Key in `.env` as `TENSORMUX_API_KEY`
 
 Only `classify.py` calls the model. Everything else is local and free.
+
+## Governing vs descriptive context (found by the eval, not by design)
+
+The first working harness showed 1 silent error: a rule learned from LinkedIn
+offer letters auto-applied `employer_name: keep` to an Instagram post, where
+this user wants it hidden. Confidence was high and the rule was retrieved --
+retrieval tolerates partial context matches by design.
+
+The fix distinguishes two kinds of context:
+
+- **Governing** (`doc_type`, `platform`) -- the preference genuinely differs
+  across these, so a rule may not act unattended unless they agree exactly.
+- **Descriptive** (`issuer`) -- informs ranking, never blocks application.
+  Which board issued a scorecard does not change whether a roll number is
+  private.
+
+Requiring strict agreement on ALL dimensions dropped the benefit to 16%;
+restricting it to governing dimensions restored 40% with silent errors at 0.
