@@ -1,0 +1,111 @@
+{
+  "gate_2024": {
+    "path": "C:\\Users\\CHAITANYA RAM 2.0\\syndicate\\demo\\images\\gate_2024.png",
+    "must_redact": [
+      "GA24107733",
+      "CS24B0417",
+      "14-08-2002"
+    ],
+    "context": {
+      "doc_type": "exam_scorecard",
+      "platform": "linkedin",
+      "issuer": "GATE"
+    }
+  },
+  "jee_main": {
+    "path": "C:\\Users\\CHAITANYA RAM 2.0\\syndicate\\demo\\images\\jee_main.png",
+    "must_redact": [
+      "JM250884219",
+      "JM25R7781",
+      "14-08-2002"
+    ],
+    "context": {
+      "doc_type": "exam_scorecard",
+      "platform": "linkedin",
+      "issuer": "JEE"
+    }
+  },
+  "upsc_pre": {
+    "path": "C:\\Users\\CHAITANYA RAM 2.0\\syndicate\\demo\\images\\upsc_pre.png",
+    "must_redact": [
+      "UP2400913",
+      "UP24C0221"
+    ],
+    "context": {
+      "doc_type": "exam_scorecard",
+      "platform": "linkedin",
+      "issuer": "UPSC"
+    }
+  },
+  "ssc_cgl": {
+    "path": "C:\\Users\\CHAITANYA RAM 2.0\\syndicate\\demo\\images\\ssc_cgl.png",
+    "must_redact": [
+      "SS24771204",
+      "SS24R3390",
+      "14-08-2002"
+    ],
+    "context": {
+      "doc_type": "exam_scorecard",
+      "platform": "linkedin",
+      "issuer": "SSC"
+    }
+  },
+  "gate_2025": {
+    "path": "C:\\Users\\CHAITANYA RAM 2.0\\syndicate\\demo\\images\\gate_2025.png",
+    "must_redact": [
+      "GA25330918",
+      "CS25B1120",
+      "14-08-2002"
+    ],
+    "context": {
+      "doc_type": "exam_scorecard",
+      "platform": "linkedin",
+      "issuer": "GATE"
+    }
+  },
+  "cat_score": {
+    "path": "C:\\Users\\CHAITANYA RAM 2.0\\syndicate\\demo\\images\\cat_score.png",
+    "must_redact": [
+      "CT24559041",
+      "CT24R8802"
+    ],
+    "context": {
+      "doc_type": "exam_scorecard",
+      "platform": "linkedin",
+      "issuer": "CAT"
+    }
+  },
+  "car_front": {
+    "path": "C:\\Users\\CHAITANYA RAM 2.0\\syndicate\\demo\\images\\car_front.png",
+    "must_redact": [
+      "MH12AB1234"
+    ],
+    "context": {
+      "doc_type": "vehicle_photo",
+      "platform": "instagram",
+      "issuer": ""
+    }
+  },
+  "bike_new": {
+    "path": "C:\\Users\\CHAITANYA RAM 2.0\\syndicate\\demo\\images\\bike_new.png",
+    "must_redact": [
+      "KA05CJ8890"
+    ],
+    "context": {
+      "doc_type": "vehicle_photo",
+      "platform": "instagram",
+      "issuer": ""
+    }
+  },
+  "car_side": {
+    "path": "C:\\Users\\CHAITANYA RAM 2.0\\syndicate\\demo\\images\\car_side.png",
+    "must_redact": [
+      "TN09XY4417"
+    ],
+    "context": {
+      "doc_type": "vehicle_photo",
+      "platform": "instagram",
+      "issuer": ""
+    }
+  }
+}
