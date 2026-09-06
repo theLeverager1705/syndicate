@@ -1,0 +1,26 @@
+{
+  "field_name": "roll_number",
+  "decision": "redact",
+  "context": {
+    "doc_type": "exam_scorecard",
+    "platform": "linkedin",
+    "issuer": "GATE"
+  },
+  "rationale": "User confirmed that they redacts roll_number on a exam_scorecard.",
+  "support": [
+    "run_80240",
+    "run_80336",
+    "run_80355",
+    "run_80365",
+    "run_80381"
+  ],
+  "contradictions": [],
+  "anchors": [
+    "rollnumber"
+  ],
+  "id": "rule_cebf1698",
+  "created_at": 1788680240.9922585,
+  "updated_at": 1788680381.2621586,
+  "confidence": 0.871,
+  "auto_apply": true
+}

@@ -1,0 +1,25 @@
+{
+  "field_name": "date_of_birth",
+  "decision": "redact",
+  "context": {
+    "doc_type": "exam_scorecard",
+    "platform": "linkedin",
+    "issuer": "GATE"
+  },
+  "rationale": "User confirmed that they redacts date_of_birth on a exam_scorecard.",
+  "support": [
+    "run_80240",
+    "run_80336",
+    "run_80355",
+    "run_80365"
+  ],
+  "contradictions": [],
+  "anchors": [
+    "dateofbirth"
+  ],
+  "id": "rule_5a787070",
+  "created_at": 1788680240.999388,
+  "updated_at": 1788680365.0328078,
+  "confidence": 0.862,
+  "auto_apply": true
+}

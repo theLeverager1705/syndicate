@@ -1,0 +1,25 @@
+{
+  "field_name": "registration_number",
+  "decision": "redact",
+  "context": {
+    "doc_type": "exam_scorecard",
+    "platform": "linkedin",
+    "issuer": "GATE"
+  },
+  "rationale": "User confirmed that they redacts registration_number on a exam_scorecard.",
+  "support": [
+    "run_80240",
+    "run_80355",
+    "run_80365",
+    "run_80381"
+  ],
+  "contradictions": [],
+  "anchors": [
+    "registrationno"
+  ],
+  "id": "rule_a8e805bb",
+  "created_at": 1788680240.9887073,
+  "updated_at": 1788680381.2596507,
+  "confidence": 0.862,
+  "auto_apply": true
+}

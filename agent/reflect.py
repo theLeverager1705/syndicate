@@ -42,6 +42,7 @@ class ReflectionReport:
     contradicted: list[str] = field(default_factory=list)
     surprises: list[str] = field(default_factory=list)
     skipped_unresolved: int = 0
+    skipped_unconfirmed: int = 0
 
     @property
     def learned_anything(self) -> bool:
@@ -57,6 +58,8 @@ class ReflectionReport:
             bits.append(f"{len(self.contradicted)} corrected")
         if self.skipped_unresolved:
             bits.append(f"{self.skipped_unresolved} unresolved (not learned)")
+        if self.skipped_unconfirmed:
+            bits.append(f"{self.skipped_unconfirmed} unconfirmed (not learned)")
         return ", ".join(bits) or "nothing new"
 
 
@@ -95,6 +98,13 @@ def reflect_on_run(
         # agent would then apply that rule unattended on later runs.
         if decision.field_name.startswith("unresolved_"):
             report.skipped_unresolved += 1
+            continue
+
+        # An unconfirmed model guess is not evidence of what the user wants.
+        # Acting on it is reasonable; recording it as their preference is not,
+        # because the next run would then treat the guess as settled fact.
+        if decision.source == "model" and not decision.asked_user:
+            report.skipped_unconfirmed += 1
             continue
 
         rule, action = memory.learn(
