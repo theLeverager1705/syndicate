@@ -1,0 +1,152 @@
+# Verity — an agent that learns what you are willing to share
+
+Track 1 (Automated Agent Engineering), Syndicate by Maximor.
+
+## One-line pitch
+
+Verity screens content before you post it publicly, and **learns each user's
+individual sharing posture from their corrections**, so it needs fewer and
+fewer of them over time.
+
+## Why this is a learning-agent project, not a PII detector
+
+A PII detector is a fixed function: same input, same output, forever.
+Verity's behaviour on run N depends on runs 1..N-1. It:
+
+1. **Retrieves** prior rules relevant to this document's context.
+2. **Proposes** redactions, auto-applying only rules it has earned confidence in.
+3. **Observes** what the user accepts, rejects, or edits.
+4. **Reflects** on disagreements and writes generalised rules.
+5. **Verifies** its own output deterministically, and retries when it failed.
+
+Run 1 asks about everything. Run 8 asks about nothing and is still correct.
+That delta is the product.
+
+## Non-negotiable design commitments
+
+- **Deterministic verification.** After redacting, we re-run OCR on the output
+  image and assert the target string is absent. We never ask a model whether
+  its own work succeeded.
+- **Explainable retrieval.** Weighted context overlap, no embeddings. The UI
+  can always answer "why did this rule fire?".
+- **Memory is per-user and contextual.** A rule learned for Instagram must not
+  silently govern a LinkedIn post. Context = (doc_type, platform, issuer).
+- **The agent may be wrong.** Contradictions lower confidence rather than
+  deleting rules; a shaken rule returns to asking the user.
+
+## Architecture
+
+```
+image ──► ocr.extract() ──► [Token(text, bbox, conf)]
+                                  │
+              memory.retrieve(context) ──► [Rule]
+                                  │
+                          classify.propose()          ← one LLM call
+                                  │
+                        [Proposal(field, decision, bbox, source)]
+                                  │
+                    ┌─────────────┴─────────────┐
+             auto-apply (earned)          ask user (unearned)
+                    └─────────────┬─────────────┘
+                                  ▼
+                        redact.apply() ──► output image
+                                  │
+                        verify.check() ──► ok? ──no──► escalate blur, retry
+                                  │ yes
+                                  ▼
+                     reflect.learn() ──► memory/*.json grows
+```
+
+## Interface contracts (FROZEN — do not change without updating this file)
+
+Workers build against these. Anyone who needs a change edits SPEC.md first.
+
+```python
+# agent/ocr.py
+@dataclass
+class Token:
+    text: str
+    bbox: tuple[int, int, int, int]   # x0, y0, x1, y1 in pixels
+    confidence: float                  # 0..1
+
+def extract(image_path: str) -> list[Token]: ...
+
+
+# agent/classify.py
+@dataclass
+class Proposal:
+    field_name: str        # snake_case, e.g. "registration_number"
+    decision: str          # "redact" | "keep"
+    token_indices: list[int]  # indices into the Token list
+    rationale: str
+    source: str            # "memory" (rule fired) | "model" (fresh judgement)
+    rule_id: str | None    # set when source == "memory"
+    needs_user: bool       # True when no earned rule covers this
+
+def propose(
+    tokens: list[Token],
+    context: dict[str, str],
+    rules: list[tuple[Rule, float]],
+) -> tuple[list[Proposal], Usage]: ...
+
+
+# agent/redact.py
+def apply(
+    image_path: str,
+    boxes: list[tuple[int, int, int, int]],
+    out_path: str,
+    strength: int = 1,      # escalation level; higher = larger + blurrier
+) -> str: ...
+
+
+# agent/verify.py
+@dataclass
+class VerifyResult:
+    ok: bool
+    still_readable: list[str]   # target strings OCR could still recover
+    attempts: int
+
+def check(out_path: str, must_be_absent: list[str]) -> VerifyResult: ...
+
+
+# agent/memory.py  (BUILT — do not rewrite)
+PolicyMemory.retrieve(context) -> list[tuple[Rule, float]]
+PolicyMemory.learn(field_name, decision, context, rationale, run_id) -> (Rule, str)
+PolicyMemory.stats() -> dict
+```
+
+## Run record (written to runs/run_NNN.json)
+
+Every run emits this. The eval harness reads these to plot improvement.
+
+```json
+{
+  "run_id": "run_003",
+  "context": {"doc_type": "exam_scorecard", "platform": "linkedin", "issuer": "GATE"},
+  "proposals": 7,
+  "auto_applied": 5,
+  "user_interventions": 2,
+  "verify_attempts": 1,
+  "verify_failures": 0,
+  "tokens_in": 1840,
+  "tokens_out": 260,
+  "latency_ms": 3100,
+  "rules_before": 4,
+  "rules_after": 6
+}
+```
+
+## The metric that is the demo
+
+`user_interventions` per run, falling to zero across the sequence, while
+`verify_failures` stays at zero. Plus `tokens_in` falling as memory replaces
+reasoning — getting smarter and getting cheaper are the same curve.
+
+## Inference
+
+TensorMux, OpenAI-compatible:
+- Base URL: `https://api.tensormux.com/v1`
+- Model: `glm-4-7-flash`
+- Key in `.env` as `TENSORMUX_API_KEY`
+
+Only `classify.py` calls the model. Everything else is local and free.
