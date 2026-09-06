@@ -8,19 +8,19 @@
   },
   "rationale": "User confirmed that they keeps all_india_rank on a exam_scorecard.",
   "support": [
-    "run_80240",
-    "run_80336",
-    "run_80355",
-    "run_80365",
-    "run_80381"
+    "run_80596",
+    "run_80678",
+    "run_80691",
+    "run_80698",
+    "run_80705"
   ],
   "contradictions": [],
   "anchors": [
     "allindiarank"
   ],
-  "id": "rule_63fb7dae",
-  "created_at": 1788680241.0113397,
-  "updated_at": 1788680381.2736077,
+  "id": "rule_921ce14f",
+  "created_at": 1788680596.5400577,
+  "updated_at": 1788680705.7594554,
   "confidence": 0.871,
   "auto_apply": true
 }

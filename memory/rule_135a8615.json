@@ -8,19 +8,19 @@
   },
   "rationale": "User confirmed that they keeps candidate_name on a exam_scorecard.",
   "support": [
-    "run_80240",
-    "run_80336",
-    "run_80355",
-    "run_80365",
-    "run_80381"
+    "run_80596",
+    "run_80678",
+    "run_80691",
+    "run_80698",
+    "run_80705"
   ],
   "contradictions": [],
   "anchors": [
     "candidatename"
   ],
-  "id": "rule_56ad8095",
-  "created_at": 1788680240.985136,
-  "updated_at": 1788680381.2546864,
+  "id": "rule_135a8615",
+  "created_at": 1788680596.5300364,
+  "updated_at": 1788680705.7403133,
   "confidence": 0.871,
   "auto_apply": true
 }

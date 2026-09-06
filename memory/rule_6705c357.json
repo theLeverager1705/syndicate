@@ -8,18 +8,18 @@
   },
   "rationale": "User confirmed that they redacts registration_number on a exam_scorecard.",
   "support": [
-    "run_80240",
-    "run_80355",
-    "run_80365",
-    "run_80381"
+    "run_80596",
+    "run_80691",
+    "run_80698",
+    "run_80705"
   ],
   "contradictions": [],
   "anchors": [
     "registrationno"
   ],
-  "id": "rule_a8e805bb",
-  "created_at": 1788680240.9887073,
-  "updated_at": 1788680381.2596507,
+  "id": "rule_6705c357",
+  "created_at": 1788680596.5318677,
+  "updated_at": 1788680705.7461476,
   "confidence": 0.862,
   "auto_apply": true
 }

@@ -8,20 +8,20 @@
   },
   "rationale": "User confirmed that they keeps score on a exam_scorecard.",
   "support": [
-    "run_80240",
-    "run_80336",
-    "run_80355",
-    "run_80365",
-    "run_80381"
+    "run_80596",
+    "run_80678",
+    "run_80691",
+    "run_80698",
+    "run_80705"
   ],
   "contradictions": [],
   "anchors": [
     "score",
     "percentile"
   ],
-  "id": "rule_24164c29",
-  "created_at": 1788680241.0052145,
-  "updated_at": 1788680381.2669911,
+  "id": "rule_226063b0",
+  "created_at": 1788680596.5380554,
+  "updated_at": 1788680705.7544792,
   "confidence": 0.871,
   "auto_apply": true
 }
