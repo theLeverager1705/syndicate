@@ -1,7 +1,17 @@
-anthropic>=0.40
+# Web
 fastapi>=0.115
 uvicorn[standard]>=0.32
-pillow>=11
 python-multipart>=0.0.12
-httpx>=0.27
+
+# Vision pipeline (all local -- OCR and redaction never leave the machine)
+rapidocr-onnxruntime>=1.3
+pillow>=11
 numpy>=1.26
+
+# Model + storage clients
+openai>=1.50            # OpenAI-compatible client, pointed at TensorMux
+httpx>=0.27
+truststore>=0.9         # trust the OS cert store; consumer AV re-signs TLS
+
+# CLI
+rich>=13
