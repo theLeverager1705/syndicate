@@ -13,6 +13,7 @@ Privacy posture of the hosted version, stated plainly because it matters:
 from __future__ import annotations
 
 import io
+import os
 import time
 import uuid
 from dataclasses import dataclass
@@ -40,7 +41,7 @@ MAX_UPLOAD = 8 * 1024 * 1024
 # stays well above the detector's minimum size -- and cuts inference time
 # several-fold. Boxes are scaled back to original coordinates before redaction,
 # so the output is full resolution.
-MAX_EDGE = 1600
+MAX_EDGE = int(os.environ.get('VERITY_MAX_EDGE', '1100'))
 
 
 @dataclass
@@ -268,6 +269,16 @@ async def policy(user_id: str) -> JSONResponse:
         "seen": len(r.support),
         "context": r.context,
     } for r in rules]})
+
+
+@app.on_event("startup")
+async def _warm() -> None:
+    """Load the OCR models before serving. Cheaper than doing it inside a
+    request that is also holding an image and its intermediate buffers."""
+    try:
+        ocr._get_engine()
+    except Exception:
+        pass
 
 
 @app.get("/healthz")

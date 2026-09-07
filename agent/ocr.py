@@ -27,10 +27,26 @@ class Token:
 
 
 def _get_engine():
+    """Lazily build the OCR engine, constrained for small containers.
+
+    onnxruntime allocates a per-thread memory arena, so the default thread
+    count multiplies resident memory for no benefit on a single-request
+    workload. Pinning to one thread is the difference between fitting in a
+    512MB instance and being OOM-killed mid-request.
+    """
     global _engine
     if _engine is None:
+        import os
+
+        os.environ.setdefault("OMP_NUM_THREADS", "1")
+        os.environ.setdefault("OMP_THREAD_LIMIT", "1")
         from rapidocr_onnxruntime import RapidOCR
-        _engine = RapidOCR()
+
+        try:
+            _engine = RapidOCR(intra_op_num_threads=1, inter_op_num_threads=1)
+        except TypeError:
+            # Older rapidocr builds do not accept these kwargs.
+            _engine = RapidOCR()
     return _engine
 
 

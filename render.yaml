@@ -12,6 +12,12 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.7"
+      - key: OMP_NUM_THREADS
+        value: "1"
+      - key: VERITY_MAX_EDGE
+        value: "1100"
+      - key: WEB_CONCURRENCY
+        value: "1"
       - key: EVOROZEN_API_KEY
         sync: false          # set in the Render dashboard, never in git
       - key: TENSORMUX_API_KEY
