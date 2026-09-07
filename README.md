@@ -2,7 +2,7 @@
 
 **An agent that learns what you're willing to share.**
 
-Syndicate by Maximor · Track 1, Automated Agent Engineering
+Evorozen Apex — Category 6: Agentic OS & Workflow Automation
 
 ---
 
@@ -113,6 +113,22 @@ Without an API key the pipeline still runs end to end — OCR, redaction and
 verification are entirely local. Only fresh classification needs the model, and
 by run 4 it isn't calling one anyway.
 
+## Pluggable memory backend
+
+`PolicyMemory` talks to a `RuleStore` (see `agent/store.py`), which is the
+complete persistence contract: read all rules, write one, delete one. The
+default `LocalJSONStore` keeps one JSON file per rule.
+
+That seam exists so the backing store is a substitution rather than a
+refactor. Swapping the local directory for a hosted virtual-database service
+means implementing three methods; nothing in the learning logic changes.
+
+Local JSON was chosen over a vector database deliberately: with rules
+numbering in the tens, embeddings would add infrastructure and remove the
+ability to explain why a rule fired. Every rule is a file you can open and
+read, which matters for a system whose central claim is that its decisions are
+auditable.
+
 ## Built with AO
 
 Work was decomposed into frozen-interface work packages (`SPEC.md`, `TASKS.md`)
@@ -135,6 +151,7 @@ integration stayed serial.
 
 ```
 agent/memory.py      persistent policy memory, confidence, anchors
+agent/store.py       pluggable persistence backend (RuleStore protocol)
 agent/reflect.py     corrections -> rules; refuses to learn from guesses
 agent/classify.py    the only file that calls a model
 agent/ocr.py         RapidOCR with content-hash caching

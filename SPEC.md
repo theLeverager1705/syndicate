@@ -1,6 +1,6 @@
 # Verity — an agent that learns what you are willing to share
 
-Track 1 (Automated Agent Engineering), Syndicate by Maximor.
+Evorozen Apex — Category 6: Agentic OS & Workflow Automation.
 
 ## One-line pitch
 

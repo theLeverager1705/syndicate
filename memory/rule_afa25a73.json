@@ -8,22 +8,15 @@
   },
   "rationale": "User confirmed that they redacts date_of_birth on a exam_scorecard.",
   "support": [
-    "run_80596",
-    "run_80678",
-    "run_80691",
-    "run_80698",
-    "run_81440",
-    "run_81465",
-    "run_81475",
-    "run_81485"
+    "run_06472"
   ],
   "contradictions": [],
   "anchors": [
     "dateofbirth"
   ],
-  "id": "rule_c0b3fbfa",
-  "created_at": 1788680596.5361419,
-  "updated_at": 1788681485.0846393,
-  "confidence": 0.884,
-  "auto_apply": true
+  "id": "rule_afa25a73",
+  "created_at": 1788706473.0220923,
+  "updated_at": 1788706473.0232956,
+  "confidence": 0.75,
+  "auto_apply": false
 }

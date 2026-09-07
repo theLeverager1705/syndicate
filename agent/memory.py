@@ -7,12 +7,13 @@ so the UI can show *why* a rule fired.
 """
 from __future__ import annotations
 
-import json
 import time
 import uuid
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Any
+
+from .store import LocalJSONStore, RuleStore
 
 MEMORY_DIR = Path(__file__).resolve().parent.parent / "memory"
 
@@ -129,26 +130,39 @@ class Rule:
 class PolicyMemory:
     """File-backed store. One JSON per rule so the demo can show files appearing."""
 
-    def __init__(self, directory: Path | None = None) -> None:
+    def __init__(
+        self,
+        directory: Path | None = None,
+        store: RuleStore | None = None,
+    ) -> None:
+        """Back memory with `store`, or a local directory when none is given.
+
+        The store is the only thing that knows where rules physically live, so
+        moving to a hosted backend means passing a different object here.
+        """
         self.dir = Path(directory) if directory else MEMORY_DIR
-        self.dir.mkdir(parents=True, exist_ok=True)
+        self.store: RuleStore = store or LocalJSONStore(self.dir)
 
     # ---------- persistence ----------
 
     def all_rules(self) -> list[Rule]:
         rules = []
-        for p in sorted(self.dir.glob("rule_*.json")):
-            raw = json.loads(p.read_text(encoding="utf-8"))
+        for raw in self.store.load_all():
+            raw = dict(raw)
+            # Derived fields are recomputed, never trusted from storage.
             raw.pop("confidence", None)
             raw.pop("auto_apply", None)
-            rules.append(Rule(**raw))
+            try:
+                rules.append(Rule(**raw))
+            except TypeError:
+                # A rule written by an older or newer schema is skipped rather
+                # than crashing the run.
+                continue
         return rules
 
     def save(self, rule: Rule) -> None:
         rule.updated_at = time.time()
-        (self.dir / f"{rule.id}.json").write_text(
-            json.dumps(rule.to_json(), indent=2), encoding="utf-8"
-        )
+        self.store.put(rule.id, rule.to_json())
 
     # ---------- retrieval ----------
 
