@@ -1,0 +1,25 @@
+{
+  "field_name": "roll_number",
+  "decision": "redact",
+  "context": {
+    "doc_type": "exam_scorecard",
+    "platform": "linkedin",
+    "issuer": "",
+    "_user": "u_ce66u4pu6fvmtqp8sw6"
+  },
+  "rationale": "User confirmed that they redacts roll_number on a exam_scorecard.",
+  "support": [
+    "web_1788753222",
+    "web_1788753341",
+    "web_1788753530"
+  ],
+  "contradictions": [],
+  "anchors": [
+    "rollnumber"
+  ],
+  "id": "rule_11fd3895",
+  "created_at": 1788753226.8279667,
+  "updated_at": 1788753533.2897327,
+  "confidence": 0.846,
+  "auto_apply": true
+}

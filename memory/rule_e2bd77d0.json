@@ -1,0 +1,25 @@
+{
+  "field_name": "registration_number",
+  "decision": "redact",
+  "context": {
+    "doc_type": "exam_scorecard",
+    "platform": "linkedin",
+    "issuer": "",
+    "_user": "u_ce66u4pu6fvmtqp8sw6"
+  },
+  "rationale": "User confirmed that they redacts registration_number on a exam_scorecard.",
+  "support": [
+    "web_1788753222",
+    "web_1788753341",
+    "web_1788753530"
+  ],
+  "contradictions": [],
+  "anchors": [
+    "registrationno"
+  ],
+  "id": "rule_e2bd77d0",
+  "created_at": 1788753226.8215578,
+  "updated_at": 1788753533.2790658,
+  "confidence": 0.846,
+  "auto_apply": true
+}

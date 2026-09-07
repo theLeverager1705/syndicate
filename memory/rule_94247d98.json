@@ -1,0 +1,25 @@
+{
+  "field_name": "all_india_rank",
+  "decision": "redact",
+  "context": {
+    "doc_type": "exam_scorecard",
+    "platform": "linkedin",
+    "issuer": "",
+    "_user": "u_ce66u4pu6fvmtqp8sw6"
+  },
+  "rationale": "User confirmed that they redacts all_india_rank on a exam_scorecard.",
+  "support": [
+    "web_1788753222"
+  ],
+  "contradictions": [
+    "web_1788753530"
+  ],
+  "anchors": [
+    "allindiarank"
+  ],
+  "id": "rule_94247d98",
+  "created_at": 1788753226.852398,
+  "updated_at": 1788753533.315838,
+  "confidence": 0.449,
+  "auto_apply": false
+}

@@ -1,0 +1,25 @@
+{
+  "field_name": "score",
+  "decision": "redact",
+  "context": {
+    "doc_type": "exam_scorecard",
+    "platform": "linkedin",
+    "issuer": "",
+    "_user": "u_ce66u4pu6fvmtqp8sw6"
+  },
+  "rationale": "User confirmed that they redacts score on a exam_scorecard.",
+  "support": [
+    "web_1788753222"
+  ],
+  "contradictions": [
+    "web_1788753530"
+  ],
+  "anchors": [
+    "score"
+  ],
+  "id": "rule_36f464f4",
+  "created_at": 1788753226.844128,
+  "updated_at": 1788753533.3075938,
+  "confidence": 0.449,
+  "auto_apply": false
+}

@@ -1,0 +1,24 @@
+{
+  "field_name": "registration_number",
+  "decision": "redact",
+  "context": {
+    "doc_type": "exam_scorecard",
+    "platform": "linkedin",
+    "issuer": "",
+    "_user": "scale_test"
+  },
+  "rationale": "User confirmed that they redacts registration_number on a exam_scorecard.",
+  "support": [
+    "web_1788753868",
+    "web_1788754025"
+  ],
+  "contradictions": [],
+  "anchors": [
+    "registrationno"
+  ],
+  "id": "rule_24bbfaca",
+  "created_at": 1788753871.3121207,
+  "updated_at": 1788754028.886972,
+  "confidence": 0.816,
+  "auto_apply": true
+}

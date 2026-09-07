@@ -1,0 +1,26 @@
+{
+  "field_name": "candidate_name",
+  "decision": "redact",
+  "context": {
+    "doc_type": "exam_scorecard",
+    "platform": "linkedin",
+    "issuer": "",
+    "_user": "u_ce66u4pu6fvmtqp8sw6"
+  },
+  "rationale": "User confirmed that they redacts candidate_name on a exam_scorecard.",
+  "support": [
+    "web_1788753222",
+    "web_1788753341"
+  ],
+  "contradictions": [
+    "web_1788753530"
+  ],
+  "anchors": [
+    "candidatename"
+  ],
+  "id": "rule_11a908c6",
+  "created_at": 1788753226.8132074,
+  "updated_at": 1788753533.2686014,
+  "confidence": 0.537,
+  "auto_apply": false
+}
