@@ -134,21 +134,36 @@ class PolicyMemory:
         self,
         directory: Path | None = None,
         store: RuleStore | None = None,
+        namespace: str = "",
     ) -> None:
         """Back memory with `store`, or a local directory when none is given.
 
         The store is the only thing that knows where rules physically live, so
         moving to a hosted backend means passing a different object here.
+
+        `namespace` scopes rules to one person. The whole premise is that
+        privacy preferences are individual, so one user's learned policy must
+        never govern another's post -- in a shared store that separation has to
+        be explicit rather than assumed.
         """
         self.dir = Path(directory) if directory else MEMORY_DIR
         self.store: RuleStore = store or LocalJSONStore(self.dir)
+        self.namespace = namespace
 
     # ---------- persistence ----------
+
+    # Reserved context key carrying the owning user. Not a matching dimension:
+    # it is absent from CONTEXT_WEIGHTS and GOVERNING_CONTEXT, so it partitions
+    # the store without affecting how rules are ranked or applied.
+    USER_KEY = "_user"
 
     def all_rules(self) -> list[Rule]:
         rules = []
         for raw in self.store.load_all():
             raw = dict(raw)
+            owner = (raw.get("context") or {}).get(self.USER_KEY, "")
+            if owner != self.namespace:
+                continue
             # Derived fields are recomputed, never trusted from storage.
             raw.pop("confidence", None)
             raw.pop("auto_apply", None)
@@ -236,6 +251,9 @@ class PolicyMemory:
         it lowers its confidence, and if the rule flips below the auto-apply
         threshold the agent starts asking about that field again.
         """
+        context = dict(context)
+        if self.namespace:
+            context[self.USER_KEY] = self.namespace
         existing = self.find_similar(field_name, context)
         if existing is None:
             rule = Rule(

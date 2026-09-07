@@ -288,16 +288,16 @@ def main() -> None:
     # travel: field names, decisions, confidences and the layout anchors that
     # located a field. Documents, OCR text and the identifiers themselves stay
     # on this machine. Pass --local to run entirely offline.
-    from agent.store import LocalJSONStore, default_store
+    from agent.store import LocalJSONStore, ResilientStore, default_store
 
     store = default_store(prefer_local="--local" in args)
     memory = PolicyMemory(store=store)
-    if isinstance(store, LocalJSONStore):
-        console.print("[dim]memory: local files"
-                      + ("" if "--local" in args else " (Neural DB unreachable)")
-                      + "[/dim]")
+    if isinstance(store, ResilientStore):
+        console.print("[dim]memory: Evorozen Neural DB (local mirror)[/dim]")
     else:
-        console.print("[dim]memory: Evorozen Neural DB[/dim]")
+        console.print("[dim]memory: local files"
+                      + ("" if "--local" in args else " (Neural DB unavailable)")
+                      + "[/dim]")
 
     if command == "reset":
         if MEMORY_DIR.exists():

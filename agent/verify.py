@@ -73,3 +73,17 @@ def check(out_path: str, must_be_absent: list[str], attempts: int = 1) -> Verify
     tokens = [t.text for t in ocr.extract(out_path, use_cache=False)]
     survivors = [s for s in must_be_absent if leaked(s, tokens)]
     return VerifyResult(ok=not survivors, still_readable=survivors, attempts=attempts)
+
+
+def check_bytes(image_bytes: bytes, must_be_absent: list[str]) -> VerifyResult:
+    """Deterministic verification against in-memory PNG bytes."""
+    import io
+
+    import numpy as np
+    from PIL import Image
+
+    with Image.open(io.BytesIO(image_bytes)) as im:
+        array = np.array(im.convert("RGB"))
+    tokens = [t.text for t in ocr.extract_array(array)]
+    survivors = [s for s in must_be_absent if leaked(s, tokens)]
+    return VerifyResult(ok=not survivors, still_readable=survivors)

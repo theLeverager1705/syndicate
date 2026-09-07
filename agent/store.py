@@ -75,16 +75,92 @@ def default_store(prefer_local: bool = False) -> RuleStore:
     """
     from pathlib import Path
 
-    if not prefer_local:
-        try:
-            from .neural_store import NeuralPulseStore
-
-            store = NeuralPulseStore()
-            store.ensure_schema()
-            return store
-        except Exception:
-            # Falling back is deliberate and silent-ish: the caller reports it.
-            pass
-
     root = Path(__file__).resolve().parent.parent
-    return LocalJSONStore(root / "memory")
+    local = LocalJSONStore(root / "memory")
+
+    if prefer_local:
+        return local
+
+    try:
+        from .neural_store import NeuralPulseStore
+
+        primary = NeuralPulseStore()
+        primary.ensure_schema()
+        return ResilientStore(primary, local)
+    except Exception:
+        # No credentials, or the service is unreachable at startup.
+        return local
+
+
+class ResilientStore:
+    """Primary store with a local mirror that takes over when it fails.
+
+    A hosted dependency will be unavailable sometimes -- quota exhausted, DNS
+    down, a bad deploy at the provider. None of that is a reason for a user's
+    redaction to fail, so:
+
+      * every write goes to the local mirror as well as the primary, which
+        keeps the fallback warm rather than empty at the moment it is needed;
+      * the first primary failure flips the store to degraded and everything
+        continues locally;
+      * `degraded` and `reason` are exposed so the UI can say what happened
+        instead of pretending nothing did.
+    """
+
+    def __init__(self, primary: RuleStore, fallback: RuleStore) -> None:
+        self.primary = primary
+        self.fallback = fallback
+        self.degraded = False
+        self.reason = ""
+
+    def _degrade(self, exc: Exception) -> None:
+        if not self.degraded:
+            self.degraded = True
+            self.reason = str(exc)
+
+    def load_all(self) -> list[dict[str, Any]]:
+        if not self.degraded:
+            try:
+                return self.primary.load_all()
+            except Exception as exc:
+                self._degrade(exc)
+        return self.fallback.load_all()
+
+    def put(self, rule_id: str, payload: dict[str, Any]) -> None:
+        self.fallback.put(rule_id, payload)          # mirror first, always
+        if not self.degraded:
+            try:
+                self.primary.put(rule_id, payload)
+            except Exception as exc:
+                self._degrade(exc)
+
+    def delete(self, rule_id: str) -> None:
+        self.fallback.delete(rule_id)
+        if not self.degraded:
+            try:
+                self.primary.delete(rule_id)
+            except Exception as exc:
+                self._degrade(exc)
+
+    # Telemetry is best-effort and primary-only; losing it must never surface
+    # to the user as a failed redaction.
+    def record_run(self, record: dict[str, Any]) -> None:
+        if self.degraded:
+            return
+        recorder = getattr(self.primary, "record_run", None)
+        if recorder is None:
+            return
+        try:
+            recorder(record)
+        except Exception as exc:
+            self._degrade(exc)
+
+    def load_runs(self) -> list[dict[str, Any]]:
+        loader = getattr(self.primary, "load_runs", None)
+        if self.degraded or loader is None:
+            return []
+        try:
+            return loader()
+        except Exception as exc:
+            self._degrade(exc)
+            return []

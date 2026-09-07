@@ -71,3 +71,13 @@ if __name__ == "__main__":
 
     for t in extract(sys.argv[1]):
         print(f"{t.confidence:.2f}  {str(t.bbox):<28} {t.text}")
+
+
+def extract_array(array, use_cache: bool = False) -> list[Token]:
+    """OCR a numpy RGB array. Used by the web app so an upload never hits disk."""
+    result, _elapse = _get_engine()(array)
+    tokens: list[Token] = []
+    for row in (result or []):
+        quad, text, score = row[0], row[1], row[2]
+        tokens.append(Token(str(text), _quad_to_box(quad), float(score)))
+    return tokens

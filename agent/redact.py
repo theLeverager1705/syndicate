@@ -81,3 +81,28 @@ def apply(
 
     img.save(out_path)
     return out_path
+
+
+def apply_bytes(image_bytes: bytes, boxes: list[Box], strength: int = 1) -> bytes:
+    """Redact in memory and return PNG bytes. No filesystem involved."""
+    import io
+
+    radius, padding = _params(strength)
+    with Image.open(io.BytesIO(image_bytes)) as src:
+        img = src.convert("RGB")
+
+    if boxes:
+        draw = ImageDraw.Draw(img)
+        for box in boxes:
+            region_box = _expand(box, padding, img.size)
+            if region_box[2] <= region_box[0] or region_box[3] <= region_box[1]:
+                continue
+            if strength >= OPAQUE_AT:
+                draw.rectangle(region_box, fill=(17, 17, 17))
+            else:
+                region = img.crop(region_box).filter(ImageFilter.GaussianBlur(radius))
+                img.paste(region, region_box[:2])
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()

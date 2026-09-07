@@ -1,0 +1,23 @@
+{
+  "field_name": "candidate_name",
+  "decision": "keep",
+  "context": {
+    "doc_type": "exam_scorecard",
+    "platform": "linkedin",
+    "issuer": "",
+    "_user": "demo_user_1"
+  },
+  "rationale": "User overrode the agent and keeps candidate_name on a exam_scorecard.",
+  "support": [
+    "web_1788752795"
+  ],
+  "contradictions": [],
+  "anchors": [
+    "candidatename"
+  ],
+  "id": "rule_9427d6e5",
+  "created_at": 1788752798.7338693,
+  "updated_at": 1788752798.7364042,
+  "confidence": 0.75,
+  "auto_apply": false
+}

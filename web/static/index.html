@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verity — check before you post</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --line: #262b36;
+    --text: #e8eaf0; --dim: #9aa3b2;
+    --keep: #37b56b; --redact: #e0574a; --mem: #4c8dff; --warn: #e0a24a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  header {
+    padding: 22px 24px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  }
+  h1 { font-size: 19px; margin: 0; letter-spacing: -0.2px; }
+  .sub { color: var(--dim); font-size: 13px; }
+  main { max-width: 1080px; margin: 0 auto; padding: 26px 24px 80px; }
+  .grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 22px; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 12px; padding: 18px;
+  }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
+             color: var(--dim); margin: 0 0 14px; font-weight: 600; }
+  #drop {
+    border: 1.5px dashed #333a49; border-radius: 12px; padding: 44px 20px;
+    text-align: center; cursor: pointer; transition: .15s;
+  }
+  #drop:hover, #drop.over { border-color: var(--mem); background: #12161d; }
+  #drop p { margin: 6px 0; color: var(--dim); font-size: 14px; }
+  #drop strong { color: var(--text); font-size: 15px; }
+  select, button {
+    font: inherit; border-radius: 8px; border: 1px solid var(--line);
+    background: #1d222b; color: var(--text); padding: 8px 12px;
+  }
+  button { cursor: pointer; }
+  button.primary { background: var(--mem); border-color: var(--mem); color: #fff; font-weight: 600; }
+  button.primary:disabled { opacity: .45; cursor: default; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td { padding: 9px 6px; border-top: 1px solid var(--line); vertical-align: middle; }
+  tr:first-child td { border-top: none; }
+  .val { font-family: ui-monospace, Consolas, monospace; color: #cfd6e4; }
+  .badge {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em;
+    padding: 2px 7px; border-radius: 999px; font-weight: 700;
+  }
+  .b-mem { background: rgba(76,141,255,.16); color: var(--mem); }
+  .b-ask { background: rgba(224,162,74,.16); color: var(--warn); }
+  .toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .toggle button { border: 0; border-radius: 0; padding: 5px 11px; font-size: 12.5px; background: transparent; color: var(--dim); }
+  .toggle button.on[data-v="keep"] { background: rgba(55,181,107,.18); color: var(--keep); font-weight: 700; }
+  .toggle button.on[data-v="redact"] { background: rgba(224,87,74,.18); color: var(--redact); font-weight: 700; }
+  img.preview { width: 100%; border-radius: 10px; border: 1px solid var(--line); display: block; }
+  .muted { color: var(--dim); font-size: 13px; }
+  .stat { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13.5px; }
+  .stat b { font-variant-numeric: tabular-nums; }
+  .ok { color: var(--keep); } .bad { color: var(--redact); }
+  .note { font-size: 12.5px; color: var(--dim); margin-top: 14px; line-height: 1.5; }
+  .hidden { display: none !important; }
+  .spin { display:inline-block; width:13px; height:13px; border:2px solid #3a4152; border-top-color: var(--mem);
+          border-radius:50%; animation:s .7s linear infinite; }
+  @keyframes s { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Verity</h1>
+  <span class="sub">Check what you're about to post. It learns what <em>you</em> consider private.</span>
+</header>
+
+<main>
+  <div class="grid">
+    <div>
+      <div class="card" id="upload-card">
+        <h2>1 · Upload</h2>
+        <div class="row" style="margin-bottom:14px">
+          <span class="muted">Posting to</span>
+          <select id="platform">
+            <option value="linkedin">LinkedIn</option>
+            <option value="instagram">Instagram</option>
+            <option value="x">X / Twitter</option>
+          </select>
+          <select id="doctype">
+            <option value="exam_scorecard">Scorecard / result</option>
+            <option value="offer_letter">Offer letter</option>
+            <option value="vehicle_photo">Vehicle photo</option>
+            <option value="document">Other document</option>
+          </select>
+        </div>
+        <div id="drop">
+          <strong>Drop an image here</strong>
+          <p>or click to choose — PNG or JPG, up to 8MB</p>
+        </div>
+        <!-- Outside #drop on purpose: screening rewrites that element's
+             innerHTML, which would detach the input and break every upload
+             after the first. -->
+        <input type="file" id="file" accept="image/*" class="hidden">
+        <p class="note">
+          Your image is processed in memory and never written to disk or stored.
+          Only the <em>rules</em> it learns (field names and your decisions) are saved,
+          so it can help you faster next time.
+        </p>
+      </div>
+
+      <div class="card hidden" id="review-card" style="margin-top:18px">
+        <h2>2 · Review</h2>
+        <div id="summary" class="muted" style="margin-bottom:12px"></div>
+        <table id="fields"></table>
+        <div class="row" style="margin-top:16px">
+          <button class="primary" id="apply">Protect &amp; download</button>
+          <span id="applying" class="muted hidden"><span class="spin"></span> verifying…</span>
+        </div>
+      </div>
+
+      <div class="card hidden" id="result-card" style="margin-top:18px">
+        <h2>3 · Result</h2>
+        <div id="verdict" style="margin-bottom:12px"></div>
+        <img id="out" class="preview" alt="Redacted image">
+        <div class="row" style="margin-top:14px">
+          <a id="dl" download="safe.png"><button class="primary">Download</button></a>
+          <button id="again">Screen another</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>What it has learned about you</h2>
+        <div id="policy" class="muted">Nothing yet — screen your first image.</div>
+        <p class="note">
+          Rules act on their own once they have been confirmed twice and stay
+          confident. Contradict one and it goes back to asking.
+        </p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const uid = (() => {
+  let v = null;
+  try { v = localStorage.getItem("verity_uid"); } catch (e) {}
+  if (!v) {
+    v = "u_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    try { localStorage.setItem("verity_uid", v); } catch (e) {}
+  }
+  return v;
+})();
+
+let current = null;
+
+const drop = $("#drop"), fileInput = $("#file");
+drop.addEventListener("click", () => fileInput.click());
+drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", e => {
+  e.preventDefault(); drop.classList.remove("over");
+  if (e.dataTransfer.files[0]) screen(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener("change", e => { if (e.target.files[0]) screen(e.target.files[0]); });
+
+async function screen(file) {
+  drop.innerHTML = '<strong><span class="spin"></span> Reading the image…</strong><p>OCR, then working out what each value is</p>';
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("user_id", uid);
+  fd.append("platform", $("#platform").value);
+  fd.append("doc_type", $("#doctype").value);
+
+  try {
+    const r = await fetch("/api/screen", { method: "POST", body: fd });
+    if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+    current = await r.json();
+    renderFields(current);
+  } catch (err) {
+    drop.innerHTML = '<strong>Could not read that</strong><p>' + err.message + '</p>';
+    return;
+  }
+  resetDrop();
+}
+
+function resetDrop() {
+  drop.innerHTML = '<strong>Drop an image here</strong><p>or click to choose — PNG or JPG, up to 8MB</p>';
+}
+
+function renderFields(data) {
+  $("#review-card").classList.remove("hidden");
+  $("#result-card").classList.add("hidden");
+  $("#summary").textContent =
+    `${data.proposals.length} values found · ${data.from_memory} handled from memory · ${data.asked} need you`;
+
+  const t = $("#fields");
+  t.innerHTML = "";
+  data.proposals.forEach(p => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><div>${p.field.replace(/_/g, " ")}</div>
+          <div class="val">${escapeHtml(p.value)}</div></td>
+      <td>${p.needs_you
+            ? '<span class="badge b-ask">asks you</span>'
+            : '<span class="badge b-mem">from memory</span>'}</td>
+      <td style="text-align:right">
+        <span class="toggle" data-i="${p.i}">
+          <button data-v="keep" class="${p.decision === 'keep' ? 'on' : ''}">Keep</button>
+          <button data-v="redact" class="${p.decision === 'redact' ? 'on' : ''}">Hide</button>
+        </span>
+      </td>`;
+    t.appendChild(tr);
+  });
+
+  t.querySelectorAll(".toggle button").forEach(b => {
+    b.addEventListener("click", () => {
+      b.parentElement.querySelectorAll("button").forEach(x => x.classList.remove("on"));
+      b.classList.add("on");
+    });
+  });
+}
+
+function collect() {
+  const out = {};
+  document.querySelectorAll("#fields .toggle").forEach(tg => {
+    const on = tg.querySelector("button.on");
+    out[tg.dataset.i] = on ? on.dataset.v : "keep";
+  });
+  return out;
+}
+
+$("#apply").addEventListener("click", async () => {
+  if (!current) return;
+  $("#apply").disabled = true;
+  $("#applying").classList.remove("hidden");
+  try {
+    const r = await fetch("/api/apply", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: current.token, user_id: uid, decisions: collect() })
+    });
+    if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+    const res = await r.json();
+    $("#out").src = res.image;
+    $("#dl").href = res.image;
+    $("#verdict").innerHTML = res.verified
+      ? `<span class="ok"><b>Verified.</b></span> <span class="muted">Re-read the output with OCR at strength ${res.strength} — the hidden values are unreadable. Learned: ${res.learned}.</span>`
+      : `<span class="bad"><b>Still readable:</b></span> <span class="muted">${res.still_readable.join(", ")}</span>`;
+    $("#result-card").classList.remove("hidden");
+    $("#review-card").classList.add("hidden");
+    loadPolicy();
+  } catch (err) {
+    $("#verdict").innerHTML = '<span class="bad">' + err.message + '</span>';
+  }
+  $("#apply").disabled = false;
+  $("#applying").classList.add("hidden");
+});
+
+$("#again").addEventListener("click", () => {
+  $("#result-card").classList.add("hidden");
+  current = null; resetDrop();
+});
+
+async function loadPolicy() {
+  try {
+    const r = await fetch("/api/policy?user_id=" + encodeURIComponent(uid));
+    const d = await r.json();
+    const el = $("#policy");
+    if (!d.rules.length) { el.textContent = "Nothing yet — screen your first image."; return; }
+    el.innerHTML = "<table>" + d.rules.map(r => `
+      <tr>
+        <td>${r.field.replace(/_/g, " ")}<div class="muted" style="font-size:12px">
+            ${r.context.doc_type || ""} · ${r.context.platform || ""}</div></td>
+        <td><span class="badge ${r.decision === 'keep' ? 'b-mem' : 'b-ask'}">${r.decision}</span></td>
+        <td style="text-align:right" class="val">${r.confidence}
+            <div class="muted" style="font-size:11.5px">${r.auto ? "acts alone" : "still asks"}</div></td>
+      </tr>`).join("") + "</table>";
+  } catch (e) {}
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+loadPolicy();
+</script>
+</body>
+</html>

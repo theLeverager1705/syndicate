@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: verity
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: EVOROZEN_API_KEY
+        sync: false          # set in the Render dashboard, never in git
+      - key: TENSORMUX_API_KEY
+        sync: false

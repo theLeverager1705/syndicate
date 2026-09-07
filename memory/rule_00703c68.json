@@ -1,0 +1,23 @@
+{
+  "field_name": "all_india_rank",
+  "decision": "keep",
+  "context": {
+    "doc_type": "exam_scorecard",
+    "platform": "linkedin",
+    "issuer": "",
+    "_user": "demo_user_1"
+  },
+  "rationale": "User confirmed that they keeps all_india_rank on a exam_scorecard.",
+  "support": [
+    "web_1788752795"
+  ],
+  "contradictions": [],
+  "anchors": [
+    "allindiarank"
+  ],
+  "id": "rule_00703c68",
+  "created_at": 1788752798.7646155,
+  "updated_at": 1788752798.7665217,
+  "confidence": 0.75,
+  "auto_apply": false
+}
