@@ -4,6 +4,10 @@
     python cli.py run <image> [--auto]      one run, interactive unless --auto
     python cli.py memory                    show what has been learned
     python cli.py sequence                  the scripted demo sequence
+    python cli.py stats                     run history from Neural DB
+
+Learned policy and run telemetry are stored in Evorozen Neural DB. Pass
+--local to run entirely offline against local files instead.
 
 Interactive runs ask only about fields no earned rule covers. As memory grows
 the questions stop, and so do the model calls.
@@ -13,6 +17,7 @@ from __future__ import annotations
 import shutil
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 from rich.console import Console
@@ -82,6 +87,32 @@ def ask(field_name: str, value: str, proposed: str, rationale: str) -> str:
             return "redact"
         if answer.startswith("k"):
             return "keep"
+
+
+def _record(memory: PolicyMemory, run_id: str, image_path: str,
+            context: dict, stats: dict, learned: str) -> None:
+    """Push this run's outcome to shared history, if the backend supports it."""
+    recorder = getattr(memory.store, "record_run", None)
+    if recorder is None:
+        return
+    try:
+        recorder({
+            "run_id": run_id,
+            "document": Path(image_path).stem,
+            "context": context,
+            "asked": stats["asked"],
+            "from_memory": stats["from_memory"],
+            "model_calls": stats["model_calls"],
+            "tokens_out": stats["tokens_out"],
+            "latency_ms": int(stats["seconds"] * 1000),
+            "verify_attempts": stats.get("verify_attempts", 1),
+            "final_strength": stats.get("final_strength", 1),
+            "learned": learned,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+    except Exception as exc:
+        # Telemetry must never take down a run.
+        console.print(f"[dim]run history not recorded: {exc}[/dim]")
 
 
 def run_one(image_path: str, memory: PolicyMemory, auto: bool = False,
@@ -203,9 +234,13 @@ def run_one(image_path: str, memory: PolicyMemory, auto: bool = False,
                         expand=False))
     console.print(f"  [dim]safe copy: {out_path}[/dim]\n")
 
-    return {"asked": asked_count, "from_memory": from_memory,
-            "model_calls": usage.model_calls, "tokens_out": usage.tokens_out,
-            "seconds": elapsed, "out": out_path}
+    stats = {"asked": asked_count, "from_memory": from_memory,
+             "model_calls": usage.model_calls, "tokens_out": usage.tokens_out,
+             "seconds": elapsed, "out": out_path,
+             "verify_attempts": strength, "final_strength": strength}
+    _record(memory, f"run_{int(time.time()) % 100000:05d}", image_path,
+            context, stats, report.summary())
+    return stats
 
 
 def show_memory(memory: PolicyMemory) -> None:
@@ -249,17 +284,20 @@ def main() -> None:
 
     command = args[0]
 
-    # --neural backs memory with Evorozen Neural DB instead of local files.
-    # Only rules travel: field names, decisions, confidences and layout
-    # anchors. Documents and extracted identifiers never leave the machine.
-    if "--neural" in args:
-        from agent.neural_store import NeuralPulseStore
-        store = NeuralPulseStore()
-        store.ensure_schema()
-        memory = PolicyMemory(store=store)
-        console.print("[dim]memory backend: Evorozen Neural DB[/dim]")
+    # Learned policy lives in Evorozen Neural DB by default. Only rules
+    # travel: field names, decisions, confidences and the layout anchors that
+    # located a field. Documents, OCR text and the identifiers themselves stay
+    # on this machine. Pass --local to run entirely offline.
+    from agent.store import LocalJSONStore, default_store
+
+    store = default_store(prefer_local="--local" in args)
+    memory = PolicyMemory(store=store)
+    if isinstance(store, LocalJSONStore):
+        console.print("[dim]memory: local files"
+                      + ("" if "--local" in args else " (Neural DB unreachable)")
+                      + "[/dim]")
     else:
-        memory = PolicyMemory()
+        console.print("[dim]memory: Evorozen Neural DB[/dim]")
 
     if command == "reset":
         if MEMORY_DIR.exists():
@@ -308,6 +346,36 @@ def main() -> None:
                           str(s["model_calls"]), str(s["tokens_out"]),
                           f"{s['seconds']:.1f}s")
         console.print(table)
+
+    elif command == "stats":
+        loader = getattr(memory.store, "load_runs", None)
+        if loader is None:
+            console.print("[yellow]run history requires the Neural DB backend[/yellow]")
+            return
+        runs = loader()
+        if not runs:
+            console.print("[dim]no runs recorded yet[/dim]")
+            return
+
+        table = Table(title="run history (Evorozen Neural DB)", box=None)
+        for col in ("run", "document", "asked", "memory", "calls", "tokens", "ms"):
+            table.add_column(col)
+        for i, r in enumerate(runs, 1):
+            table.add_row(str(i), str(r.get("document", ""))[:14],
+                          str(r["asked"]), str(r["from_memory"]),
+                          str(r["model_calls"]), str(r["tokens_out"]),
+                          str(r["latency_ms"]))
+        console.print(table)
+
+        first, last = runs[0], runs[-1]
+        console.print()
+        console.print(
+            f"  [dim]across {len(runs)} runs:[/dim] "
+            f"asked {first['asked']} -> [bold]{last['asked']}[/bold]   "
+            f"model calls {first['model_calls']} -> [bold]{last['model_calls']}[/bold]   "
+            f"tokens {first['tokens_out']} -> [bold]{last['tokens_out']}[/bold]"
+        )
+        console.print()
 
     else:
         console.print(f"[red]unknown command: {command}[/red]")

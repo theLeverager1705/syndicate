@@ -19,6 +19,12 @@ from typing import Any
 
 ENDPOINT = "https://pulse.evorozen.com/api/neural"
 TABLE = "policy_rules"
+RUNS_TABLE = "run_history"
+
+# create_schema costs a call and is idempotent server-side, so we remember
+# locally that it has been done. The free tier is 50 calls; spending them on
+# re-declaring a schema that already exists is waste.
+SCHEMA_MARKER = ".neural_schema_ok"
 
 # Columns are flat text; structured fields are JSON-encoded into *_json.
 _JSON_FIELDS = ("context", "support", "contradictions", "anchors")
@@ -69,7 +75,13 @@ class NeuralPulseStore:
 
     # ---------- schema ----------
 
-    def ensure_schema(self) -> None:
+    def ensure_schema(self, force: bool = False) -> None:
+        from .config import ROOT
+
+        marker = ROOT / SCHEMA_MARKER
+        if marker.exists() and not force:
+            return
+
         columns = [{"name": "rule_id", "type": "text"},
                    {"name": "field_name", "type": "text"},
                    {"name": "decision", "type": "text"},
@@ -77,8 +89,55 @@ class NeuralPulseStore:
                    {"name": "created_at", "type": "text"},
                    {"name": "updated_at", "type": "text"}]
         columns += [{"name": f"{f}_json", "type": "text"} for f in _JSON_FIELDS]
-        self._post("create_schema", "policy rule storage",
-                   {"tables": [{"name": self.table, "columns": columns}]})
+
+        run_columns = [{"name": n, "type": "text"} for n in (
+            "run_id", "document", "context_json", "asked", "from_memory",
+            "model_calls", "tokens_out", "latency_ms", "verify_attempts",
+            "final_strength", "learned", "created_at",
+        )]
+
+        self._post("create_schema", "policy rules and run telemetry", {
+            "tables": [
+                {"name": self.table, "columns": columns},
+                {"name": RUNS_TABLE, "columns": run_columns},
+            ]
+        })
+        (ROOT / SCHEMA_MARKER).write_text("ok", encoding="utf-8")
+
+    # ---------- telemetry ----------
+
+    def record_run(self, record: dict[str, Any]) -> None:
+        """Append one run's outcome to shared history.
+
+        The improvement curve is the product's central claim, so it belongs in
+        the same store as the policy rather than in a local file a judge has to
+        take on trust.
+        """
+        row = {k: str(record.get(k, "")) for k in (
+            "run_id", "document", "asked", "from_memory", "model_calls",
+            "tokens_out", "latency_ms", "verify_attempts", "final_strength",
+            "learned", "created_at",
+        )}
+        row["context_json"] = json.dumps(record.get("context") or {})
+        self._post("insert_data", f"record run {row['run_id']}",
+                   {"table": RUNS_TABLE, "record": row})
+
+    def load_runs(self) -> list[dict[str, Any]]:
+        """Every recorded run, oldest first."""
+        data = self._post("select_data", "read run history", {"table": RUNS_TABLE})
+        rows = data.get("data") or []
+        out = []
+        for r in rows:
+            item = dict(r)
+            for k in ("asked", "from_memory", "model_calls", "tokens_out",
+                      "latency_ms", "verify_attempts", "final_strength"):
+                try:
+                    item[k] = int(float(item.get(k) or 0))
+                except (TypeError, ValueError):
+                    item[k] = 0
+            out.append(item)
+        out.sort(key=lambda x: x.get("created_at", ""))
+        return out
 
     # ---------- encoding ----------
 

@@ -4,3 +4,4 @@ __pycache__/
 runs/*
 !runs/.gitkeep
 venv/
+.neural_schema_ok

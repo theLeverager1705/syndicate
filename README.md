@@ -113,16 +113,35 @@ Without an API key the pipeline still runs end to end — OCR, redaction and
 verification are entirely local. Only fresh classification needs the model, and
 by run 4 it isn't calling one anyway.
 
-## Memory on Evorozen Neural DB
+## Evorozen Neural DB is the backbone
 
 ```bash
 echo "EVOROZEN_API_KEY=evo_live_..." >> .env
-python cli.py sequence --teach 3 --policy --neural
+python cli.py sequence --teach 3 --policy   # Neural DB by default
+python cli.py stats                          # run history, read from Neural DB
+python cli.py memory                         # learned policy, read from Neural DB
+python cli.py sequence --local               # offline fallback
 ```
 
-`agent/neural_store.py` implements `RuleStore` against
-`https://pulse.evorozen.com/api/neural`, using `create_schema`, `upsert_data`,
-`select_data` and `delete_data`.
+Two tables, both live in Neural DB:
+
+- **`policy_rules`** -- every learned rule: field, decision, confidence,
+  supporting and contradicting run ids, and the layout anchors that locate the
+  field. This is the agent's memory. Reading it is how run 4 answers without
+  calling a model.
+- **`run_history`** -- per-run telemetry: questions asked, fields resolved from
+  memory, model calls, tokens, latency, verification attempts. The improvement
+  curve is the product's central claim, so it lives in the database rather than
+  a local file a judge has to take on trust. `cli.py stats` reads it back.
+
+`agent/neural_store.py` implements both against
+`https://pulse.evorozen.com/api/neural` using `create_schema`, `upsert_data`,
+`select_data`, `insert_data` and `delete_data`.
+
+Neural DB is the default backend. `agent/store.py::default_store()` falls back
+to local files only when the service is unreachable or `--local` is passed --
+the document-handling half of the pipeline is local by design and must keep
+working without a network.
 
 **Only rules travel.** A rule holds a field name, a decision, a confidence and
 the layout anchors that located that field -- never the document, never the

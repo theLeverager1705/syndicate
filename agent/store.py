@@ -59,3 +59,32 @@ class LocalJSONStore:
 
     def delete(self, rule_id: str) -> None:
         (self.dir / f"{rule_id}.json").unlink(missing_ok=True)
+
+
+def default_store(prefer_local: bool = False) -> RuleStore:
+    """The backing store this installation should use.
+
+    Evorozen Neural DB is the primary backend: learned policy is shared state
+    that should outlive one machine, and keeping it in a hosted store is what
+    lets the same person's preferences follow them across devices.
+
+    Local JSON remains the fallback so the pipeline still runs with no
+    credentials and no network -- which matters, because the parts that touch
+    the actual document are local by design and should not stop working just
+    because a remote service is unreachable.
+    """
+    from pathlib import Path
+
+    if not prefer_local:
+        try:
+            from .neural_store import NeuralPulseStore
+
+            store = NeuralPulseStore()
+            store.ensure_schema()
+            return store
+        except Exception:
+            # Falling back is deliberate and silent-ish: the caller reports it.
+            pass
+
+    root = Path(__file__).resolve().parent.parent
+    return LocalJSONStore(root / "memory")
