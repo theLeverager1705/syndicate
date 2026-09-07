@@ -1,10 +1,17 @@
 services:
   - type: web
     name: verity
-    runtime: docker
+    runtime: python
     plan: free
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
+      python -c "from rapidocr_onnxruntime import RapidOCR; RapidOCR()"
+    startCommand: uvicorn web.app:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /healthz
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
       - key: EVOROZEN_API_KEY
         sync: false          # set in the Render dashboard, never in git
       - key: TENSORMUX_API_KEY

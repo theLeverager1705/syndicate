@@ -5,6 +5,10 @@ python-multipart>=0.0.12
 
 # Vision pipeline (all local -- OCR and redaction never leave the machine)
 rapidocr-onnxruntime>=1.3
+# rapidocr depends on opencv-python, which needs libGL at import time. Managed
+# Python runtimes usually lack it, so the headless build is installed after and
+# provides the same cv2 module without the X11 dependency.
+opencv-python-headless>=4.9
 pillow>=11
 numpy>=1.26
 
