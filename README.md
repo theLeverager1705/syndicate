@@ -1,6 +1,6 @@
 # Verity
 
-**An agent that learns what you're willing to share.**
+**Privacy agent that learns each user's individual sharing preferences.**
 
 Evorozen Apex — Category 6: Agentic OS & Workflow Automation
 
