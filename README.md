@@ -113,6 +113,32 @@ Without an API key the pipeline still runs end to end — OCR, redaction and
 verification are entirely local. Only fresh classification needs the model, and
 by run 4 it isn't calling one anyway.
 
+## Memory on Evorozen Neural DB
+
+```bash
+echo "EVOROZEN_API_KEY=evo_live_..." >> .env
+python cli.py sequence --teach 3 --policy --neural
+```
+
+`agent/neural_store.py` implements `RuleStore` against
+`https://pulse.evorozen.com/api/neural`, using `create_schema`, `upsert_data`,
+`select_data` and `delete_data`.
+
+**Only rules travel.** A rule holds a field name, a decision, a confidence and
+the layout anchors that located that field -- never the document, never the
+OCR text, never the identifier itself. Images and extracted values stay local.
+A privacy tool that uploaded people's scorecards to a third party in order to
+remember their preferences would have defeated its own purpose, so the split
+is deliberate rather than incidental.
+
+Reads are cached in memory and only writes go over the wire: `all_rules()` is
+consulted many times per run, and the free tier allows 50 calls.
+
+Two things worth knowing if you build against this API yourself: `prompt` is
+required on every request including the deterministic ones (the published
+snippet omits it), and the `chat` action was returning
+`All LLM providers failed` during development, so nothing here depends on it.
+
 ## Pluggable memory backend
 
 `PolicyMemory` talks to a `RuleStore` (see `agent/store.py`), which is the

@@ -248,7 +248,18 @@ def main() -> None:
         return
 
     command = args[0]
-    memory = PolicyMemory()
+
+    # --neural backs memory with Evorozen Neural DB instead of local files.
+    # Only rules travel: field names, decisions, confidences and layout
+    # anchors. Documents and extracted identifiers never leave the machine.
+    if "--neural" in args:
+        from agent.neural_store import NeuralPulseStore
+        store = NeuralPulseStore()
+        store.ensure_schema()
+        memory = PolicyMemory(store=store)
+        console.print("[dim]memory backend: Evorozen Neural DB[/dim]")
+    else:
+        memory = PolicyMemory()
 
     if command == "reset":
         if MEMORY_DIR.exists():
