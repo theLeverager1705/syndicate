@@ -15,6 +15,7 @@ import json
 import time
 from dataclasses import dataclass, field
 
+from . import heuristics
 from .config import MODEL, client
 from .memory import Rule
 
@@ -228,16 +229,38 @@ def propose(
     if not remaining:
         return proposals, usage            # fully handled from memory
 
+    # Name what local rules can name. These never decide alone -- a pattern
+    # match says what a value is, not what this person wants done with it --
+    # but a correctly named field the user confirms once becomes a rule, and
+    # the model is never needed for it again.
+    named: list[Proposal] = []
+    still_unknown: list[int] = []
+    for i in remaining:
+        guess = heuristics.identify(tokens[i].text, _label_for(tokens, i))
+        if guess is None:
+            still_unknown.append(i)
+            continue
+        field_name, decision = guess
+        named.append(Proposal(
+            field_name=field_name, decision=decision, token_indices=[i],
+            rationale="Recognised from the document's own labelling.",
+            source="model", needs_user=True,
+        ))
+
     c = client()
-    if c is None:
-        # No credentials: fall back to asking about everything unresolved.
-        for i in remaining:
+    if c is None or not still_unknown:
+        proposals.extend(named)
+        for i in still_unknown:
             proposals.append(Proposal(
-                field_name=f"{UNRESOLVED_PREFIX}{i}", decision="redact", token_indices=[i],
-                rationale="No model available; deferring to you.",
+                field_name=f"{UNRESOLVED_PREFIX}{i}", decision="redact",
+                token_indices=[i],
+                rationale="Not recognised; deferring to you.",
                 source="model", needs_user=True,
             ))
         return proposals, usage
+
+    remaining = still_unknown
+    proposals.extend(named)
 
     lines = []
     for i in remaining:
